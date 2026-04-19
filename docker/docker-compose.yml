@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # --- Infrastructure ---
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: dlq-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: dlq-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: dlq-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: dlqrevive
+      POSTGRES_USER: dlqrevive
+      POSTGRES_PASSWORD: dlqrevive
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  postgres-data:

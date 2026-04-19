@@ -1,0 +1,48 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Gradle (if ever used)
+.gradle/
+build/
+
+# Node (Angular frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Environment
+.env
+*.env.local
+application-local.yml
+
+# Logs
+*.log
+logs/
+
+# Compiled
+*.class
+*.jar
+*.war
+
+# Coverage
+*.exec
+coverage/
