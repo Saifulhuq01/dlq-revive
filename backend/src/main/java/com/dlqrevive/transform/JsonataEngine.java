@@ -1,10 +1,15 @@
 package com.dlqrevive.transform;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import static com.dashjoin.jsonata.Jsonata.jsonata;
+
+import com.dashjoin.jsonata.Jsonata;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 /**
  * JsonataEngine — Safe, declarative JSON-to-JSON transformation.
@@ -16,7 +21,7 @@ import org.springframework.stereotype.Service;
  * - Zero network access
  * - Safe to execute in any sandbox
  *
- * Usage: Jsonata.of(expression).evaluate(jsonNode)
+ * Uses the com.dashjoin:jsonata library (Java port of the JSONata reference implementation).
  */
 @Service
 public class JsonataEngine {
@@ -34,14 +39,14 @@ public class JsonataEngine {
      */
     public String transform(String jsonInput, String expression) {
         try {
-            // Parse the input JSON
-            JsonNode inputNode = objectMapper.readTree(jsonInput);
+            // Parse the input JSON into a Map structure (required by dashjoin jsonata)
+            Map<String, Object> inputData = objectMapper.readValue(
+                    jsonInput, new TypeReference<Map<String, Object>>() {});
 
             // Execute JSONata transformation
             // Using com.dashjoin.jsonata library — purely declarative, zero RCE surface
-            com.api.jsonata4java.expressions.Expressions expr =
-                    com.api.jsonata4java.expressions.Expressions.parse(expression);
-            JsonNode result = expr.evaluate(inputNode);
+            Jsonata expr = jsonata(expression);
+            Object result = expr.evaluate(inputData);
 
             if (result == null) {
                 throw new TransformationException("JSONata expression returned null. " +
@@ -68,7 +73,7 @@ public class JsonataEngine {
      */
     public boolean validate(String expression) {
         try {
-            com.api.jsonata4java.expressions.Expressions.parse(expression);
+            jsonata(expression);
             return true;
         } catch (Exception e) {
             log.debug("Invalid JSONata expression: {}", e.getMessage());

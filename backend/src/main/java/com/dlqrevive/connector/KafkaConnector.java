@@ -49,7 +49,8 @@ public class KafkaConnector {
     }
 
     /**
-     * Assigns a consumer to a specific topic partition and seeks to the given offset.
+     * Assigns a consumer to a specific topic partition and seeks to the given
+     * offset.
      * This is the ONLY correct way to read DLQ messages in view mode.
      *
      * @param consumer  The Kafka consumer (must NOT be subscribed to any group)
