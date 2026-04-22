@@ -70,15 +70,7 @@ public class DLQReader {
                 for (ConsumerRecord<String, String> record : records) {
                     if (fetched >= effectiveLimit) break;
 
-                    messages.add(DLQMessage.builder()
-                            .topic(record.topic())
-                            .partition(record.partition())
-                            .offset(record.offset())
-                            .key(record.key())
-                            .value(record.value())
-                            .timestamp(record.timestamp())
-                            .headers(extractHeaders(record))
-                            .build());
+                    messages.add(DLQMessage.from(record));
                     fetched++;
                 }
             }
@@ -96,12 +88,5 @@ public class DLQReader {
         }
 
         return messages;
-    }
-
-    private java.util.Map<String, String> extractHeaders(ConsumerRecord<String, String> record) {
-        java.util.Map<String, String> headers = new java.util.LinkedHashMap<>();
-        record.headers().forEach(header ->
-                headers.put(header.key(), new String(header.value(), java.nio.charset.StandardCharsets.UTF_8)));
-        return headers;
     }
 }
