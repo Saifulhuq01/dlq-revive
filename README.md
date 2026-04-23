@@ -35,7 +35,7 @@ git clone https://github.com/saifulhuq01/dlq-revive.git
 cd dlq-revive
 
 # Start all services (Kafka, PostgreSQL, Backend, Frontend)
-docker compose up -d
+docker compose -f docker/docker-compose.yml up -d
 
 # Open the dashboard
 open http://localhost:4200
