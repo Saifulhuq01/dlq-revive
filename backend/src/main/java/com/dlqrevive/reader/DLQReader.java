@@ -59,6 +59,8 @@ public class DLQReader {
             int fetched = 0;
             int emptyPolls = 0;
 
+            // emptyPolls < 3: Kafka consumer.poll() can sometimes return empty even if there are 
+            // messages in the topic, especially on the first few polls. We give it 3 tries before giving up.
             while (fetched < effectiveLimit && emptyPolls < 3) {
                 ConsumerRecords<String, String> records = consumer.poll(POLL_TIMEOUT);
 

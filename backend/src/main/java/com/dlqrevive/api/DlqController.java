@@ -26,6 +26,8 @@ public class DlqController {
     public List<DLQMessage> getMessages(
             @PathVariable String topic,
             @RequestParam String bootstrapServers,
+            // Defaulting to partition 0 because DLQs are often single-partitioned.
+            // If the topic has multiple partitions, the frontend will need to loop or specify it.
             @RequestParam(defaultValue = "0") int partition,
             @RequestParam(defaultValue = "0") long fromOffset,
             @RequestParam(defaultValue = "10") int limit) {
@@ -33,6 +35,7 @@ public class DlqController {
         log.info("REST request to read messages from topic: {}, partition: {}, fromOffset: {}, limit: {}", 
                 topic, partition, fromOffset, limit);
                 
+        // TODO: Replace "api-user" with actual authenticated user identity once Spring Security is added
         auditLogger.logBrowse(topic, partition, fromOffset, "api-user");
                 
         return dlqReader.readMessages(bootstrapServers, topic, partition, fromOffset, limit);

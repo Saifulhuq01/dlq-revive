@@ -35,8 +35,12 @@ public class KafkaConnector {
     public KafkaConsumer<String, String> createReadOnlyConsumer(String bootstrapServers, String clientId) {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        
+        // We use StringDeserializer for everything because a DLQ message payload might be JSON, 
+        // Avro (with Schema Registry), or plain text. String gives us the raw representation.
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, "dlq-revive-" + clientId);
         // No group.id — we use assign() mode, not subscribe()
         // This ensures we never steal partitions from real consumers
