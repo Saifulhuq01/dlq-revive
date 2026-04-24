@@ -36,6 +36,8 @@ public class AuditLogger {
 
     @Transactional
     public void logBrowse(String topic, int partition, long fromOffset, String user) {
+        // We use a generated session_id for browse because browsing is stateless at the moment.
+        // If we add full session tracking later, we should pass the actual session ID from the request.
         jdbcTemplate.update(
                 "INSERT INTO audit_trail (action, topic, message_count, \"user\", timestamp, session_id) " +
                 "VALUES (?, ?, ?, ?, ?, ?)",
