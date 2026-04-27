@@ -1,4 +1,16 @@
-// DLQ Revive — Audit Component
-// Displays audit trail of all redrive actions
-// TODO: Week 5 — Build audit log table with filtering
-export const AUDIT_MODULE = 'audit';
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+
+@Component({
+  selector: 'app-audit',
+  standalone: true,
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule],
+  templateUrl: './audit.component.html',
+  styleUrl: './audit.component.scss'
+})
+export class AuditComponent {
+  title = 'Audit Log';
+}

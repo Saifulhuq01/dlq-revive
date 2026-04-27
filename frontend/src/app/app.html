@@ -1,0 +1,28 @@
+<!-- Top Toolbar -->
+<mat-toolbar color="primary" class="app-toolbar">
+  <mat-icon class="app-logo">replay_circle_filled</mat-icon>
+  <span class="app-title">DLQ Revive</span>
+  <span class="toolbar-spacer"></span>
+  <span class="app-subtitle">Dead Letter Queue Management</span>
+</mat-toolbar>
+
+<!-- Sidenav Layout -->
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav mode="side" opened class="sidenav">
+    <mat-nav-list>
+      @for (item of navItems; track item.route) {
+        <a mat-list-item
+           [routerLink]="item.route"
+           routerLinkActive="active-link"
+           [routerLinkActiveOptions]="{ exact: false }">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="main-content">
+    <router-outlet />
+  </mat-sidenav-content>
+</mat-sidenav-container>

@@ -1,0 +1,10 @@
+.page-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+
+  .welcome-card {
+    max-width: 600px;
+    width: 100%;
+  }
+}
