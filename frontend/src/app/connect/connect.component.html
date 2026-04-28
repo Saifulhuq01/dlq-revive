@@ -5,15 +5,34 @@
       <mat-card-title>Connect to Kafka</mat-card-title>
       <mat-card-subtitle>Configure your Kafka broker connection</mat-card-subtitle>
     </mat-card-header>
-    <mat-card-content>
-      <p>Week 2 — Day 1: Connect component loaded successfully ✅</p>
-      <p>Next steps: Build full connection form with Angular Material form fields.</p>
-    </mat-card-content>
-    <mat-card-actions>
-      <button mat-flat-button color="primary">
-        <mat-icon>link</mat-icon>
-        Connect
-      </button>
-    </mat-card-actions>
+    
+    <form [formGroup]="connectForm" (ngSubmit)="onSubmit()">
+      <mat-card-content class="form-content">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Bootstrap Servers URL</mat-label>
+          <input matInput formControlName="bootstrapServers" placeholder="localhost:9092">
+          <mat-icon matPrefix>dns</mat-icon>
+          <mat-error *ngIf="connectForm.get('bootstrapServers')?.hasError('required')">
+            Bootstrap Servers URL is required
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Topic Name</mat-label>
+          <input matInput formControlName="topicName" placeholder="dlq-events">
+          <mat-icon matPrefix>topic</mat-icon>
+          <mat-error *ngIf="connectForm.get('topicName')?.hasError('required')">
+            Topic Name is required
+          </mat-error>
+        </mat-form-field>
+      </mat-card-content>
+      
+      <mat-card-actions>
+        <button mat-flat-button color="primary" type="submit" [disabled]="!connectForm.valid">
+          <mat-icon>link</mat-icon>
+          Connect
+        </button>
+      </mat-card-actions>
+    </form>
   </mat-card>
 </div>
