@@ -250,7 +250,8 @@ jobs:
           # Blueprint v2 Fix 1: JSONata ONLY for transformations
           # Groovy execution = Remote Code Execution as a feature
           # A user could write: Runtime.getRuntime().exec("rm -rf /")
-          if grep -qi "groovy" backend/pom.xml; then
+          # Check for actual Groovy Maven dependency, not comments mentioning Groovy
+          if grep -qi "<artifactId>groovy\|<groupId>org.codehaus.groovy\|<groupId>org.apache.groovy" backend/pom.xml; then
             echo "❌ BLOCKED: Groovy dependency detected in pom.xml"
             echo "   This is a CRITICAL RCE vulnerability."
             echo "   DLQ Revive uses JSONata ONLY for transformations."
