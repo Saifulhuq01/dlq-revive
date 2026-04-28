@@ -1,0 +1,52 @@
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 0.5rem;
+
+  .app-logo {
+    font-size: 1.8rem;
+    height: 1.8rem;
+    width: 1.8rem;
+  }
+
+  .app-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .toolbar-spacer {
+    flex: 1;
+  }
+
+  .app-subtitle {
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+}
+
+.sidenav-container {
+  height: calc(100vh - 64px);
+}
+
+.sidenav {
+  width: 220px;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+
+  .active-link {
+    background-color: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+    border-radius: 0 50px 50px 0;
+    margin-right: 0.5rem;
+
+    mat-icon {
+      color: var(--mat-sys-on-secondary-container);
+    }
+  }
+}
+
+.main-content {
+  padding: 0;
+  overflow-y: auto;
+}

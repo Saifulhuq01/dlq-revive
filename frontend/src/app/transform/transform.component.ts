@@ -1,4 +1,16 @@
-// DLQ Revive — Transform Component
-// JSONata expression editor with side-by-side before/after preview
-// TODO: Week 3 — Build JSONata editor with Monaco + preview pane
-export const TRANSFORM_MODULE = 'transform';
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+
+@Component({
+  selector: 'app-transform',
+  standalone: true,
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule],
+  templateUrl: './transform.component.html',
+  styleUrl: './transform.component.scss'
+})
+export class TransformComponent {
+  title = 'Transform Messages';
+}
