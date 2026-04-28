@@ -64,7 +64,39 @@ cd dlq-revive
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d
+mvn clean compile
 ```
+
+## 🧪 Verification & Testing
+
+This project uses a 3-layer testing strategy to ensure production reliability.
+
+### 1. Run Backend Unit & Integration Tests
+Validates transformation logic, API contracts, and memory limits.
+```bash
+cd backend
+mvn test
+```
+
+### 2. Run Docker Infrastructure Validation
+Mirror the CI environment check locally to verify Kafka listeners and PostgreSQL schema.
+```bash
+# Ensure infra is up
+docker compose -f docker/docker-compose.yml up -d
+
+# Check container health
+docker ps
+
+# Run the E2E infrastructure test (requires manual verification of logs)
+# or check CI results in GitHub Actions for automated validation.
+```
+
+### 3. Security Regression Checks
+The CI pipeline automatically blocks:
+- **Groovy/ScriptEngine:** Prevention of Remote Code Execution (RCE).
+- **Manual Subscriptions:** Prevents "stealing" partitions from production consumers.
+- **Hardcoded Credentials:** Prevents secret leaks.
+
 
 Wait for all containers to become **healthy** (~15–20 seconds):
 
