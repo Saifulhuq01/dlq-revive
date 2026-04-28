@@ -10,8 +10,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/dlq")
+@CrossOrigin(origins = "http://localhost:4200")
 public class DlqController {
-
     private static final Logger log = LoggerFactory.getLogger(DlqController.class);
     
     private final DLQReader dlqReader;
