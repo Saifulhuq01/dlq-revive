@@ -1,18 +1,71 @@
 <div class="page-container">
-  <mat-card class="welcome-card">
+  <mat-card class="browse-card">
     <mat-card-header>
       <mat-icon mat-card-avatar>table_rows</mat-icon>
       <mat-card-title>Browse DLQ Messages</mat-card-title>
-      <mat-card-subtitle>View and paginate Dead Letter Queue messages</mat-card-subtitle>
+      <mat-card-subtitle>
+        Topic: <strong>{{ topicName || 'Not Connected' }}</strong>
+      </mat-card-subtitle>
     </mat-card-header>
+
     <mat-card-content>
-      <p>Week 2 — Day 1: Browse component loaded successfully ✅</p>
-      <p>Next steps: Build DLQ message table with pagination.</p>
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+
+      <div *ngIf="error" class="error-message">
+        {{ error }}
+      </div>
+
+      <div *ngIf="!isLoading && !error && messages.length === 0" class="empty-state">
+        No messages found in the DLQ.
+      </div>
+
+      <div class="table-container" *ngIf="!isLoading && !error && messages.length > 0">
+        <table mat-table [dataSource]="messages" class="mat-elevation-z2">
+          
+          <!-- Offset Column -->
+          <ng-container matColumnDef="offset">
+            <th mat-header-cell *matHeaderCellDef> Offset </th>
+            <td mat-cell *matCellDef="let msg"> {{ msg.offset }} </td>
+          </ng-container>
+
+          <!-- Partition Column -->
+          <ng-container matColumnDef="partition">
+            <th mat-header-cell *matHeaderCellDef> Partition </th>
+            <td mat-cell *matCellDef="let msg"> {{ msg.partition }} </td>
+          </ng-container>
+
+          <!-- Key Column -->
+          <ng-container matColumnDef="key">
+            <th mat-header-cell *matHeaderCellDef> Key </th>
+            <td mat-cell *matCellDef="let msg"> {{ msg.key || 'N/A' }} </td>
+          </ng-container>
+
+          <!-- Value Column -->
+          <ng-container matColumnDef="value">
+            <th mat-header-cell *matHeaderCellDef> Value (First 100 chars) </th>
+            <td mat-cell *matCellDef="let msg" class="value-cell" [title]="msg.value"> 
+              {{ truncateValue(msg.value) }} 
+            </td>
+          </ng-container>
+
+          <!-- Timestamp Column -->
+          <ng-container matColumnDef="timestamp">
+            <th mat-header-cell *matHeaderCellDef> Timestamp </th>
+            <td mat-cell *matCellDef="let msg"> {{ msg.timestamp | date:'medium' }} </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
     </mat-card-content>
+
     <mat-card-actions>
-      <button mat-flat-button color="primary">
+      <button mat-flat-button color="primary" (click)="loadMessages()" [disabled]="isLoading">
         <mat-icon>refresh</mat-icon>
-        Load Messages
+        Refresh
       </button>
     </mat-card-actions>
   </mat-card>
