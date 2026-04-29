@@ -34,24 +34,40 @@ export class BrowseComponent implements OnInit {
   error: string | null = null;
   topicName = '';
 
+  currentOffset = 0;
+  pageSize = 50;
+  hasMore = true;
+
   ngOnInit() {
-    this.loadMessages();
+    this.loadMessages(true);
   }
 
-  loadMessages() {
+  loadMessages(reset = false) {
     const config = this.connectionService.getConnection();
     if (!config) {
       this.router.navigate(['/connect']);
       return;
     }
 
+    if (reset) {
+      this.currentOffset = 0;
+      this.messages = [];
+      this.hasMore = true;
+    }
+
     this.topicName = config.topicName;
     this.isLoading = true;
     this.error = null;
 
-    this.dlqApi.getMessages(config.bootstrapServers, config.topicName).subscribe({
+    this.dlqApi.getMessages(config.bootstrapServers, config.topicName, 0, this.currentOffset, this.pageSize).subscribe({
       next: (data) => {
-        this.messages = data;
+        if (reset) {
+          this.messages = data;
+        } else {
+          this.messages = [...this.messages, ...data];
+        }
+        
+        this.hasMore = data.length === this.pageSize;
         this.isLoading = false;
       },
       error: (err) => {
@@ -60,6 +76,11 @@ export class BrowseComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  loadMore() {
+    this.currentOffset += this.pageSize;
+    this.loadMessages();
   }
 
   truncateValue(value: string | null): string {
