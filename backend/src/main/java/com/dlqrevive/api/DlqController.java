@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.dlqrevive.transform.JsonataEngine;
+import com.dlqrevive.transform.TransformationException;
 
 @RestController
 @RequestMapping("/dlq")
@@ -16,10 +18,12 @@ public class DlqController {
     
     private final DLQReader dlqReader;
     private final com.dlqrevive.audit.AuditLogger auditLogger;
+    private final JsonataEngine jsonataEngine;
 
-    public DlqController(DLQReader dlqReader, com.dlqrevive.audit.AuditLogger auditLogger) {
+    public DlqController(DLQReader dlqReader, com.dlqrevive.audit.AuditLogger auditLogger, JsonataEngine jsonataEngine) {
         this.dlqReader = dlqReader;
         this.auditLogger = auditLogger;
+        this.jsonataEngine = jsonataEngine;
     }
 
     @GetMapping("/{topic}/messages")
@@ -40,4 +44,20 @@ public class DlqController {
                 
         return dlqReader.readMessages(bootstrapServers, topic, partition, fromOffset, limit);
     }
+
+    @PostMapping("/transform/preview")
+    public TransformPreviewResponse previewTransform(@RequestBody TransformPreviewRequest request) {
+        log.info("REST request to preview transformation");
+        
+        try {
+            String output = jsonataEngine.transform(request.sampleMessage(), request.expression());
+            return new TransformPreviewResponse(request.sampleMessage(), output, true, null);
+        } catch (Exception e) {
+            log.debug("Transformation preview failed: {}", e.getMessage());
+            return new TransformPreviewResponse(request.sampleMessage(), null, false, e.getMessage());
+        }
+    }
+
+    public record TransformPreviewRequest(String expression, String sampleMessage) {}
+    public record TransformPreviewResponse(String input, String output, boolean valid, String error) {}
 }
