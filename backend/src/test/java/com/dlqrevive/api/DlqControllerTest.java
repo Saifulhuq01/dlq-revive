@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import com.dlqrevive.transform.JsonataEngine;
 
 import java.util.Collections;
 import java.util.List;
@@ -45,6 +46,9 @@ class DlqControllerTest {
 
     @MockBean
     private AuditLogger auditLogger;
+
+    @MockBean
+    private JsonataEngine jsonataEngine;
 
     // ===== HAPPY PATH TESTS =====
 
@@ -107,6 +111,19 @@ class DlqControllerTest {
                             .param("bootstrapServers", "localhost:9092"))
                     .andExpect(status().isOk())
                     .andExpect(content().json("[]"));
+        }
+
+        @Test
+        @DisplayName("POST /dlq/transform/preview returns 200 + JSON")
+        void previewTransform_returns200() throws Exception {
+            when(jsonataEngine.transform(anyString(), anyString())).thenReturn("{\"status\":\"PENDING\"}");
+
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/dlq/transform/preview")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"expression\": \"{\\\"status\\\": $uppercase(status)}\", \"sampleMessage\": \"{\\\"status\\\": \\\"pending\\\"}\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.valid").value(true))
+                    .andExpect(jsonPath("$.output").value("{\"status\":\"PENDING\"}"));
         }
     }
 
