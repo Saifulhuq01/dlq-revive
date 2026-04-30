@@ -106,6 +106,19 @@ class JsonataEngineTest {
             assertTrue(result.contains("ORD-1"));
             assertTrue(result.contains("500"));
         }
+
+        @Test
+        @DisplayName("Should transform status to paymentStatus")
+        void transform_statusToPaymentStatus() {
+            String input = "{\"status\":\"PENDING\"}";
+            String expression = "{\"paymentStatus\": status}";
+
+            String result = engine.transform(input, expression);
+
+            assertNotNull(result);
+            assertTrue(result.contains("\"paymentStatus\""));
+            assertTrue(result.contains("\"PENDING\""));
+        }
     }
 
     // ===== ERROR HANDLING TESTS =====
