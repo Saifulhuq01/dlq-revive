@@ -50,6 +50,9 @@ class DlqControllerTest {
     @MockBean
     private JsonataEngine jsonataEngine;
 
+    @MockBean
+    private com.dlqrevive.redrive.RedriveEngine redriveEngine;
+
     // ===== HAPPY PATH TESTS =====
 
     @Nested
@@ -205,6 +208,49 @@ class DlqControllerTest {
                     .andExpect(jsonPath("$[0].value").exists())
                     .andExpect(jsonPath("$[0].timestamp").exists())
                     .andExpect(jsonPath("$[0].headers").exists());
+        }
+    }
+
+    // ===== REDRIVE ENDPOINT TESTS =====
+
+    @Nested
+    @DisplayName("Redrive Endpoint — POST /dlq/redrive")
+    class RedriveEndpoint {
+
+        @Test
+        @DisplayName("POST /dlq/redrive returns 200 with RedriveSummary")
+        void redrive_validRequest_returns200() throws Exception {
+            com.dlqrevive.redrive.RedriveSummary summary = com.dlqrevive.redrive.RedriveSummary.builder()
+                    .produced(3).skipped(0).failed(0)
+                    .targetTopic("payments.retry")
+                    .sessionId("sess-001")
+                    .build();
+
+            when(redriveEngine.executeRedrive(any())).thenReturn(summary);
+
+            String body = """
+                {
+                    "bootstrapServers": "localhost:9092",
+                    "targetTopic": "payments.retry",
+                    "expression": null,
+                    "user": "api-user",
+                    "sessionId": "sess-001",
+                    "messages": [
+                        {"topic":"payments.dlq","partition":0,"offset":0,"key":null,"value":"{\\"id\\":1}"},
+                        {"topic":"payments.dlq","partition":0,"offset":1,"key":null,"value":"{\\"id\\":2}"},
+                        {"topic":"payments.dlq","partition":0,"offset":2,"key":null,"value":"{\\"id\\":3}"}
+                    ]
+                }
+                """;
+
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/dlq/redrive")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.produced").value(3))
+                    .andExpect(jsonPath("$.skipped").value(0))
+                    .andExpect(jsonPath("$.failed").value(0))
+                    .andExpect(jsonPath("$.targetTopic").value("payments.retry"));
         }
     }
 }
