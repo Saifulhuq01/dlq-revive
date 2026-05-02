@@ -9,6 +9,23 @@
   max-width: 1200px;
 }
 
+.template-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  
+  .template-select {
+    width: 300px;
+    margin-bottom: -1.25em;
+  }
+  
+  .save-btn {
+    height: 56px;
+  }
+}
+
 .expression-container {
   display: flex;
   gap: 16px;
