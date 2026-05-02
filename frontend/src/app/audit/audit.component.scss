@@ -1,10 +1,75 @@
 .page-container {
+  padding: 24px;
   display: flex;
   justify-content: center;
-  padding: 2rem;
+}
 
-  .welcome-card {
-    max-width: 600px;
-    width: 100%;
+.audit-card {
+  width: 100%;
+  max-width: 1200px;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+
+  .filter-field {
+    width: 250px;
+    margin-bottom: -1.25em;
+  }
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.audit-table {
+  width: 100%;
+}
+
+.action-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.browse {
+    background-color: #e3f2fd;
+    color: #1565c0;
+  }
+
+  &.redrive {
+    background-color: #fff3e0;
+    color: #e65100;
+  }
+}
+
+.session-cell {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #666;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+  color: #999;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
   }
 }
