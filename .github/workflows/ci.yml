@@ -14,7 +14,7 @@ jobs:
   #          violations, Kafka consumer lifecycle issues, audit gaps
   # ===================================================================
   test:
-    name: Build & Test (Java 17)
+    name: Build & Test
     runs-on: ubuntu-latest
 
     services:
