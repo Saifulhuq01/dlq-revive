@@ -59,4 +59,21 @@ export class DlqApiService {
     const payload = { name, expression };
     return this.http.post<TransformTemplate>(`${this.baseUrl}/templates`, payload);
   }
+
+  getAuditTrail(topic?: string, action?: string): Observable<AuditEntry[]> {
+    let params = new HttpParams();
+    if (topic) params = params.set('topic', topic);
+    if (action) params = params.set('action', action);
+    return this.http.get<AuditEntry[]>(`${this.baseUrl}/audit`, { params });
+  }
+}
+
+export interface AuditEntry {
+  id: number;
+  action: string;
+  topic: string;
+  messageCount: number;
+  user: string;
+  timestamp: string;
+  sessionId: string;
 }
