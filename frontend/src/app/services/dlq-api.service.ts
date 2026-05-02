@@ -66,6 +66,10 @@ export class DlqApiService {
     if (action) params = params.set('action', action);
     return this.http.get<AuditEntry[]>(`${this.baseUrl}/audit`, { params });
   }
+
+  executeRedrive(request: RedriveRequest): Observable<RedriveSummary> {
+    return this.http.post<RedriveSummary>(`${this.baseUrl}/redrive`, request);
+  }
 }
 
 export interface AuditEntry {
@@ -75,5 +79,30 @@ export interface AuditEntry {
   messageCount: number;
   user: string;
   timestamp: string;
+  sessionId: string;
+}
+
+export interface RedriveMessage {
+  topic: string;
+  partition: number;
+  offset: number;
+  key: string | null;
+  value: string;
+}
+
+export interface RedriveRequest {
+  bootstrapServers: string;
+  targetTopic: string;
+  expression: string | null;
+  messages: RedriveMessage[];
+  user: string;
+  sessionId: string;
+}
+
+export interface RedriveSummary {
+  produced: number;
+  skipped: number;
+  failed: number;
+  targetTopic: string;
   sessionId: string;
 }
