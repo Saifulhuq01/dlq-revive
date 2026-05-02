@@ -11,6 +11,12 @@ export interface DlqMessage {
   timestamp: number;
   headers: Record<string, string>;
 }
+export interface TransformPreviewResponse {
+  input: string;
+  output: string | null;
+  valid: boolean;
+  error: string | null;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -33,5 +39,10 @@ export class DlqApiService {
       .set('limit', limit.toString());
 
     return this.http.get<DlqMessage[]>(`${this.baseUrl}/${topic}/messages`, { params });
+  }
+
+  previewTransform(expression: string, sampleMessage: string): Observable<TransformPreviewResponse> {
+    const payload = { expression, sampleMessage };
+    return this.http.post<TransformPreviewResponse>(`${this.baseUrl}/transform/preview`, payload);
   }
 }

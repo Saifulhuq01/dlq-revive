@@ -1,19 +1,46 @@
 <div class="page-container">
-  <mat-card class="welcome-card">
+  <mat-card class="transform-card">
     <mat-card-header>
       <mat-icon mat-card-avatar>transform</mat-icon>
-      <mat-card-title>Transform Messages</mat-card-title>
-      <mat-card-subtitle>Apply transformations before replaying</mat-card-subtitle>
+      <mat-card-title>Transform Message</mat-card-title>
+      <mat-card-subtitle>
+        Topic: <strong>{{ selectedMessage?.topic }}</strong> | Partition: <strong>{{ selectedMessage?.partition }}</strong> | Offset: <strong>{{ selectedMessage?.offset }}</strong>
+      </mat-card-subtitle>
     </mat-card-header>
+
     <mat-card-content>
-      <p>Week 2 — Day 1: Transform component loaded successfully ✅</p>
-      <p>Next steps: Build message transformation editor with JSON preview.</p>
+      <div class="expression-container">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>JSONata Expression</mat-label>
+          <input matInput [(ngModel)]="expression" placeholder="e.g. { 'newField': field }" (keyup.enter)="preview()">
+          <button mat-icon-button matSuffix (click)="copyExpression()" title="Copy Expression">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+        </mat-form-field>
+        <button mat-flat-button color="primary" class="preview-btn" (click)="preview()" [disabled]="isLoading || !expression">
+          <mat-icon *ngIf="!isLoading">play_arrow</mat-icon>
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          Preview
+        </button>
+      </div>
+
+      <div *ngIf="errorMsg" class="error-banner">
+        <mat-icon>error</mat-icon>
+        {{ errorMsg }}
+      </div>
+
+      <div class="panels-container">
+        <div class="panel">
+          <h3>Original Message</h3>
+          <textarea class="code-editor input-editor" readonly [value]="originalInput"></textarea>
+        </div>
+        
+        <div class="panel">
+          <h3>Transformed Output</h3>
+          <textarea class="code-editor output-editor" readonly [value]="transformedOutput" 
+                    [ngClass]="{'valid': isValid === true, 'invalid': isValid === false}"></textarea>
+        </div>
+      </div>
     </mat-card-content>
-    <mat-card-actions>
-      <button mat-flat-button color="primary">
-        <mat-icon>edit</mat-icon>
-        Edit Transform
-      </button>
-    </mat-card-actions>
   </mat-card>
 </div>

@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { DlqMessage } from './dlq-api.service';
 
 export interface ConnectionConfig {
   bootstrapServers: string;
@@ -10,6 +11,7 @@ export interface ConnectionConfig {
 })
 export class ConnectionService {
   private currentConnection = signal<ConnectionConfig | null>(null);
+  private currentMessage = signal<DlqMessage | null>(null);
 
   connect(config: ConnectionConfig) {
     this.currentConnection.set(config);
@@ -18,5 +20,13 @@ export class ConnectionService {
 
   getConnection() {
     return this.currentConnection();
+  }
+
+  setSelectedMessage(msg: DlqMessage | null) {
+    this.currentMessage.set(msg);
+  }
+
+  getSelectedMessage() {
+    return this.currentMessage();
   }
 }
