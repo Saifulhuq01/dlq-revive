@@ -2,13 +2,16 @@ package com.dlqrevive.api;
 
 import com.dlqrevive.reader.DLQMessage;
 import com.dlqrevive.reader.DLQReader;
+import com.dlqrevive.redrive.RedriveEngine;
+import com.dlqrevive.redrive.RedriveRequest;
+import com.dlqrevive.redrive.RedriveSummary;
+import com.dlqrevive.transform.JsonataEngine;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import com.dlqrevive.transform.JsonataEngine;
-import com.dlqrevive.transform.TransformationException;
 
 @RestController
 @RequestMapping("/dlq")
@@ -19,11 +22,14 @@ public class DlqController {
     private final DLQReader dlqReader;
     private final com.dlqrevive.audit.AuditLogger auditLogger;
     private final JsonataEngine jsonataEngine;
+    private final RedriveEngine redriveEngine;
 
-    public DlqController(DLQReader dlqReader, com.dlqrevive.audit.AuditLogger auditLogger, JsonataEngine jsonataEngine) {
+    public DlqController(DLQReader dlqReader, com.dlqrevive.audit.AuditLogger auditLogger,
+                          JsonataEngine jsonataEngine, RedriveEngine redriveEngine) {
         this.dlqReader = dlqReader;
         this.auditLogger = auditLogger;
         this.jsonataEngine = jsonataEngine;
+        this.redriveEngine = redriveEngine;
     }
 
     @GetMapping("/{topic}/messages")
@@ -56,6 +62,13 @@ public class DlqController {
             log.debug("Transformation preview failed: {}", e.getMessage());
             return new TransformPreviewResponse(request.sampleMessage(), null, false, e.getMessage());
         }
+    }
+
+    @PostMapping("/redrive")
+    public RedriveSummary executeRedrive(@Valid @RequestBody RedriveRequest request) {
+        log.info("REST request to redrive {} messages to topic: {}",
+                request.getMessages().size(), request.getTargetTopic());
+        return redriveEngine.executeRedrive(request);
     }
 
     public record TransformPreviewRequest(String expression, String sampleMessage) {}
