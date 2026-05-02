@@ -29,7 +29,7 @@ export class BrowseComponent implements OnInit {
   private router = inject(Router);
 
   messages: DlqMessage[] = [];
-  displayedColumns: string[] = ['offset', 'partition', 'key', 'value', 'timestamp'];
+  displayedColumns: string[] = ['offset', 'partition', 'key', 'value', 'timestamp', 'actions'];
   isLoading = false;
   error: string | null = null;
   topicName = '';
@@ -86,5 +86,10 @@ export class BrowseComponent implements OnInit {
   truncateValue(value: string | null): string {
     if (!value) return '';
     return value.length > 100 ? value.substring(0, 100) + '...' : value;
+  }
+
+  transform(msg: DlqMessage) {
+    this.connectionService.setSelectedMessage(msg);
+    this.router.navigate(['/transform']);
   }
 }
