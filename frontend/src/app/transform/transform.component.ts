@@ -11,7 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Router } from '@angular/router';
 
-import { DlqApiService, TransformTemplate } from '../services/dlq-api.service';
+import { DlqApiService, TransformTemplate, RedriveRequest, RedriveSummary } from '../services/dlq-api.service';
 import { ConnectionService } from '../services/connection.service';
 
 @Component({
@@ -50,6 +50,12 @@ export class TransformComponent implements OnInit {
   templates: TransformTemplate[] = [];
   selectedTemplateId: string | null = null;
   isSaving = false;
+
+  // Redrive state
+  targetTopic: string = '';
+  isRedriving = false;
+  redriveSummary: RedriveSummary | null = null;
+  redriveError: string | null = null;
 
   ngOnInit() {
     const msg = this.connectionService.getSelectedMessage();
@@ -149,5 +155,52 @@ export class TransformComponent implements OnInit {
         this.snackBar.open('Expression copied to clipboard!', 'Close', { duration: 3000 });
       });
     }
+  }
+
+  executeRedrive() {
+    if (!this.targetTopic.trim()) {
+      this.snackBar.open('Please enter a target topic', 'Close', { duration: 3000 });
+      return;
+    }
+    if (!this.selectedMessage) return;
+
+    const connection = this.connectionService.getConnection();
+    const request: RedriveRequest = {
+      bootstrapServers: connection?.bootstrapServers || 'localhost:9092',
+      targetTopic: this.targetTopic,
+      expression: this.expression !== '$' ? this.expression : null,
+      messages: [{
+        topic: this.selectedMessage.topic,
+        partition: this.selectedMessage.partition,
+        offset: this.selectedMessage.offset,
+        key: this.selectedMessage.key,
+        value: this.selectedMessage.value
+      }],
+      user: 'api-user',
+      sessionId: 'session-' + Date.now()
+    };
+
+    this.isRedriving = true;
+    this.redriveSummary = null;
+    this.redriveError = null;
+
+    this.dlqApi.executeRedrive(request).subscribe({
+      next: (summary) => {
+        this.isRedriving = false;
+        this.redriveSummary = summary;
+        this.snackBar.open(
+          `Redrive complete: Produced ${summary.produced}, Skipped ${summary.skipped}, Failed ${summary.failed}`,
+          'Close', { duration: 5000 }
+        );
+      },
+      error: (err) => {
+        this.isRedriving = false;
+        if (err.status === 402) {
+          this.redriveError = err.error?.message || 'Free tier limit: 100 messages. Upgrade for bulk redrive.';
+        } else {
+          this.redriveError = 'Redrive failed: ' + (err.error?.message || err.message || 'Unknown error');
+        }
+      }
+    });
   }
 }

@@ -56,6 +56,40 @@
                     [ngClass]="{'valid': isValid === true, 'invalid': isValid === false}"></textarea>
         </div>
       </div>
+
+      <!-- Redrive Section -->
+      <div class="redrive-section">
+        <h3>Redrive to Target Topic</h3>
+        <div class="redrive-controls">
+          <mat-form-field appearance="outline" class="target-topic-field">
+            <mat-label>Target Topic</mat-label>
+            <input matInput [(ngModel)]="targetTopic" placeholder="e.g. payments.retry">
+          </mat-form-field>
+
+          <button mat-flat-button color="warn" class="redrive-btn" 
+                  (click)="executeRedrive()" 
+                  [disabled]="isRedriving || !targetTopic">
+            <mat-icon *ngIf="!isRedriving">replay</mat-icon>
+            <mat-spinner *ngIf="isRedriving" diameter="20"></mat-spinner>
+            Redrive
+          </button>
+        </div>
+
+        <div *ngIf="redriveSummary" class="redrive-result success-result">
+          <mat-icon>check_circle</mat-icon>
+          <span>
+            Produced: <strong>{{ redriveSummary.produced }}</strong>,
+            Skipped: <strong>{{ redriveSummary.skipped }}</strong>,
+            Failed: <strong>{{ redriveSummary.failed }}</strong>
+            → <strong>{{ redriveSummary.targetTopic }}</strong>
+          </span>
+        </div>
+
+        <div *ngIf="redriveError" class="redrive-result error-result">
+          <mat-icon>error</mat-icon>
+          <span>{{ redriveError }}</span>
+        </div>
+      </div>
     </mat-card-content>
   </mat-card>
 </div>

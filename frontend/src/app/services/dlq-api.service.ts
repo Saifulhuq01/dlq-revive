@@ -59,4 +59,33 @@ export class DlqApiService {
     const payload = { name, expression };
     return this.http.post<TransformTemplate>(`${this.baseUrl}/templates`, payload);
   }
+
+  executeRedrive(request: RedriveRequest): Observable<RedriveSummary> {
+    return this.http.post<RedriveSummary>(`${this.baseUrl}/redrive`, request);
+  }
+}
+
+export interface RedriveMessage {
+  topic: string;
+  partition: number;
+  offset: number;
+  key: string | null;
+  value: string;
+}
+
+export interface RedriveRequest {
+  bootstrapServers: string;
+  targetTopic: string;
+  expression: string | null;
+  messages: RedriveMessage[];
+  user: string;
+  sessionId: string;
+}
+
+export interface RedriveSummary {
+  produced: number;
+  skipped: number;
+  failed: number;
+  targetTopic: string;
+  sessionId: string;
 }
