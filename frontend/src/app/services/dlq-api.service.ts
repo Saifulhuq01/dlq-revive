@@ -17,6 +17,11 @@ export interface TransformPreviewResponse {
   valid: boolean;
   error: string | null;
 }
+export interface TransformTemplate {
+  id?: string;
+  name: string;
+  expression: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -44,5 +49,14 @@ export class DlqApiService {
   previewTransform(expression: string, sampleMessage: string): Observable<TransformPreviewResponse> {
     const payload = { expression, sampleMessage };
     return this.http.post<TransformPreviewResponse>(`${this.baseUrl}/transform/preview`, payload);
+  }
+
+  getTemplates(): Observable<TransformTemplate[]> {
+    return this.http.get<TransformTemplate[]>(`${this.baseUrl}/templates`);
+  }
+
+  saveTemplate(name: string, expression: string): Observable<TransformTemplate> {
+    const payload = { name, expression };
+    return this.http.post<TransformTemplate>(`${this.baseUrl}/templates`, payload);
   }
 }

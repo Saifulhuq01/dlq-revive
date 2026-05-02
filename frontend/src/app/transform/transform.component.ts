@@ -8,9 +8,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSelectModule } from '@angular/material/select';
 import { Router } from '@angular/router';
 
-import { DlqApiService } from '../services/dlq-api.service';
+import { DlqApiService, TransformTemplate } from '../services/dlq-api.service';
 import { ConnectionService } from '../services/connection.service';
 
 @Component({
@@ -25,7 +26,8 @@ import { ConnectionService } from '../services/connection.service';
     MatFormFieldModule,
     MatInputModule,
     MatProgressSpinnerModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatSelectModule
   ],
   templateUrl: './transform.component.html',
   styleUrl: './transform.component.scss'
@@ -45,6 +47,10 @@ export class TransformComponent implements OnInit {
   errorMsg: string | null = null;
   isLoading = false;
 
+  templates: TransformTemplate[] = [];
+  selectedTemplateId: string | null = null;
+  isSaving = false;
+
   ngOnInit() {
     const msg = this.connectionService.getSelectedMessage();
     if (!msg) {
@@ -58,6 +64,51 @@ export class TransformComponent implements OnInit {
     } catch(e) {
       this.originalInput = msg.value;
     }
+
+    this.loadTemplates();
+  }
+
+  loadTemplates() {
+    this.dlqApi.getTemplates().subscribe({
+      next: (data) => this.templates = data,
+      error: (err) => console.error('Failed to load templates', err)
+    });
+  }
+
+  onTemplateSelected(templateId: string) {
+    const template = this.templates.find(t => t.id === templateId);
+    if (template) {
+      this.expression = template.expression;
+      this.preview(); // automatically preview when loaded
+    }
+  }
+
+  saveTemplate() {
+    if (!this.expression.trim()) {
+      this.snackBar.open('Cannot save an empty expression', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const name = prompt('Enter a name for this template:');
+    if (!name) return;
+
+    this.isSaving = true;
+    this.dlqApi.saveTemplate(name, this.expression).subscribe({
+      next: (saved) => {
+        this.templates.unshift(saved);
+        this.selectedTemplateId = saved.id || null;
+        this.isSaving = false;
+        this.snackBar.open('Template saved successfully!', 'Close', { duration: 3000 });
+      },
+      error: (err) => {
+        this.isSaving = false;
+        if (err.status === 402) {
+          this.snackBar.open(err.error?.error || 'Upgrade required to save more templates.', 'Close', { duration: 5000, panelClass: ['error-snackbar'] });
+        } else {
+          this.snackBar.open('Failed to save template.', 'Close', { duration: 3000 });
+        }
+      }
+    });
   }
 
   preview() {

@@ -9,6 +9,21 @@
     </mat-card-header>
 
     <mat-card-content>
+      <div class="template-actions">
+        <mat-form-field appearance="outline" class="template-select">
+          <mat-label>Saved Templates</mat-label>
+          <mat-select [(ngModel)]="selectedTemplateId" (selectionChange)="onTemplateSelected($event.value)">
+            <mat-option *ngFor="let t of templates" [value]="t.id">{{ t.name }}</mat-option>
+            <mat-option *ngIf="templates.length === 0" disabled>No templates saved</mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <button mat-stroked-button color="primary" class="save-btn" (click)="saveTemplate()" [disabled]="isSaving || !expression">
+          <mat-icon>save</mat-icon>
+          Save Template
+        </button>
+      </div>
+
       <div class="expression-container">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>JSONata Expression</mat-label>
