@@ -1,0 +1,95 @@
+<div class="page-container">
+  <mat-card class="transform-card">
+    <mat-card-header>
+      <mat-icon mat-card-avatar>transform</mat-icon>
+      <mat-card-title>Transform Message</mat-card-title>
+      <mat-card-subtitle>
+        Topic: <strong>{{ selectedMessage?.topic }}</strong> | Partition: <strong>{{ selectedMessage?.partition }}</strong> | Offset: <strong>{{ selectedMessage?.offset }}</strong>
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="template-actions">
+        <mat-form-field appearance="outline" class="template-select">
+          <mat-label>Saved Templates</mat-label>
+          <mat-select [(ngModel)]="selectedTemplateId" (selectionChange)="onTemplateSelected($event.value)">
+            <mat-option *ngFor="let t of templates" [value]="t.id">{{ t.name }}</mat-option>
+            <mat-option *ngIf="templates.length === 0" disabled>No templates saved</mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <button mat-stroked-button color="primary" class="save-btn" (click)="saveTemplate()" [disabled]="isSaving || !expression">
+          <mat-icon>save</mat-icon>
+          Save Template
+        </button>
+      </div>
+
+      <div class="expression-container">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>JSONata Expression</mat-label>
+          <input matInput [(ngModel)]="expression" placeholder="e.g. { 'newField': field }" (keyup.enter)="preview()">
+          <button mat-icon-button matSuffix (click)="copyExpression()" title="Copy Expression">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+        </mat-form-field>
+        <button mat-flat-button color="primary" class="preview-btn" (click)="preview()" [disabled]="isLoading || !expression">
+          <mat-icon *ngIf="!isLoading">play_arrow</mat-icon>
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          Preview
+        </button>
+      </div>
+
+      <div *ngIf="errorMsg" class="error-banner">
+        <mat-icon>error</mat-icon>
+        {{ errorMsg }}
+      </div>
+
+      <div class="panels-container">
+        <div class="panel">
+          <h3>Original Message</h3>
+          <textarea class="code-editor input-editor" readonly [value]="originalInput"></textarea>
+        </div>
+        
+        <div class="panel">
+          <h3>Transformed Output</h3>
+          <textarea class="code-editor output-editor" readonly [value]="transformedOutput" 
+                    [ngClass]="{'valid': isValid === true, 'invalid': isValid === false}"></textarea>
+        </div>
+      </div>
+
+      <!-- Redrive Section -->
+      <div class="redrive-section">
+        <h3>Redrive to Target Topic</h3>
+        <div class="redrive-controls">
+          <mat-form-field appearance="outline" class="target-topic-field">
+            <mat-label>Target Topic</mat-label>
+            <input matInput [(ngModel)]="targetTopic" placeholder="e.g. payments.retry">
+          </mat-form-field>
+
+          <button mat-flat-button color="warn" class="redrive-btn" 
+                  (click)="executeRedrive()" 
+                  [disabled]="isRedriving || !targetTopic">
+            <mat-icon *ngIf="!isRedriving">replay</mat-icon>
+            <mat-spinner *ngIf="isRedriving" diameter="20"></mat-spinner>
+            Redrive
+          </button>
+        </div>
+
+        <div *ngIf="redriveSummary" class="redrive-result success-result">
+          <mat-icon>check_circle</mat-icon>
+          <span>
+            Produced: <strong>{{ redriveSummary.produced }}</strong>,
+            Skipped: <strong>{{ redriveSummary.skipped }}</strong>,
+            Failed: <strong>{{ redriveSummary.failed }}</strong>
+            → <strong>{{ redriveSummary.targetTopic }}</strong>
+          </span>
+        </div>
+
+        <div *ngIf="redriveError" class="redrive-result error-result">
+          <mat-icon>error</mat-icon>
+          <span>{{ redriveError }}</span>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

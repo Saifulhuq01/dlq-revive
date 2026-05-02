@@ -1,0 +1,33 @@
+.page-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+
+  .welcome-card {
+    max-width: 600px;
+    width: 100%;
+  }
+
+  mat-icon[mat-card-avatar] {
+    font-size: 2rem;
+    height: 40px;
+    width: 40px;
+  }
+  
+  .form-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+  
+  mat-card-actions {
+    padding: 0 16px 16px;
+    display: flex;
+    justify-content: flex-end;
+  }
+}

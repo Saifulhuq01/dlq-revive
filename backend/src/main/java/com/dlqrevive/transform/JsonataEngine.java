@@ -1,15 +1,13 @@
 package com.dlqrevive.transform;
 
-import static com.dashjoin.jsonata.Jsonata.jsonata;
-
-import com.dashjoin.jsonata.Jsonata;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.api.jsonata4java.expressions.Expressions;
+import com.api.jsonata4java.expressions.EvaluateException;
+import com.api.jsonata4java.expressions.ParseException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 /**
  * JsonataEngine — Safe, declarative JSON-to-JSON transformation.
@@ -20,8 +18,6 @@ import java.util.Map;
  * - Zero file access
  * - Zero network access
  * - Safe to execute in any sandbox
- *
- * Uses the com.dashjoin:jsonata library (Java port of the JSONata reference implementation).
  */
 @Service
 public class JsonataEngine {
@@ -39,16 +35,12 @@ public class JsonataEngine {
      */
     public String transform(String jsonInput, String expression) {
         try {
-            // Parse the input JSON into a Map structure (required by dashjoin jsonata)
-            Map<String, Object> inputData = objectMapper.readValue(
-                    jsonInput, new TypeReference<Map<String, Object>>() {});
+            JsonNode inputData = objectMapper.readTree(jsonInput);
 
-            // Execute JSONata transformation
-            // Using com.dashjoin.jsonata library — purely declarative, zero RCE surface
-            Jsonata expr = jsonata(expression);
-            Object result = expr.evaluate(inputData);
+            Expressions expr = Expressions.parse(expression);
+            JsonNode result = expr.evaluate(inputData);
 
-            if (result == null) {
+            if (result == null || result.isNull()) {
                 throw new TransformationException("JSONata expression returned null. " +
                         "Check that the expression matches the input structure.");
             }
@@ -73,7 +65,7 @@ public class JsonataEngine {
      */
     public boolean validate(String expression) {
         try {
-            jsonata(expression);
+            Expressions.parse(expression);
             return true;
         } catch (Exception e) {
             log.debug("Invalid JSONata expression: {}", e.getMessage());

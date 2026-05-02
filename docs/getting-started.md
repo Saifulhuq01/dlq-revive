@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Java 17+
-- Docker & Docker Compose
+- Docker & Docker Compose v2 (plugin)
 - Node.js 18+ (for Angular frontend)
 - Maven 3.8+
 
@@ -12,12 +12,18 @@
 ### 1. Start Infrastructure
 
 ```bash
-cd docker
-docker compose up -d
+docker compose -f docker/docker-compose.yml up -d
+```
+
+Wait for all containers to become healthy (~15–20 seconds):
+
+```bash
+docker ps --filter name=dlq-
 ```
 
 This starts:
-- **Kafka** on `localhost:9092`
+- **Zookeeper** on `localhost:2181`
+- **Kafka** on `localhost:9092` (external) / `kafka:29092` (internal Docker network)
 - **PostgreSQL** on `localhost:5432` (database: `dlqrevive`)
 
 ### 2. Create a Test DLQ Topic
@@ -50,15 +56,31 @@ mvn spring-boot:run
 
 API is now available at `http://localhost:8080`
 
+> **Important:** Always run Maven from the `backend/` directory. There is no root-level `pom.xml`.
+
 ### 5. Start the Frontend
 
 ```bash
 cd frontend
 npm install
-ng serve
+npx ng serve
 ```
 
 Dashboard is now available at `http://localhost:4200`
+
+## Environment Configuration
+
+When running the backend **locally** (outside Docker), the defaults work out of the box:
+- `KAFKA_BOOTSTRAP_SERVERS` defaults to `localhost:9092`
+- `DB_URL` defaults to `jdbc:postgresql://localhost:5432/dlqrevive`
+
+When running the backend **inside Docker**, override with:
+```bash
+KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+DB_URL=jdbc:postgresql://postgres:5432/dlqrevive
+```
+
+See `docker/.env.example` for all available environment variables.
 
 ## API Endpoints
 

@@ -1,0 +1,92 @@
+<div class="page-container">
+  <mat-card class="browse-card">
+    <mat-card-header>
+      <mat-icon mat-card-avatar>table_rows</mat-icon>
+      <mat-card-title>Browse DLQ Messages</mat-card-title>
+      <mat-card-subtitle>
+        Topic: <strong>{{ topicName || 'Not Connected' }}</strong>
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div *ngIf="error" class="error-message">
+        {{ error }}
+      </div>
+
+      <div *ngIf="!isLoading && !error && messages.length === 0" class="empty-state">
+        No messages found in the DLQ.
+      </div>
+
+      <div class="table-container" *ngIf="messages.length > 0">
+        <table mat-table [dataSource]="messages" class="mat-elevation-z2">
+          
+          <!-- Offset Column -->
+          <ng-container matColumnDef="offset">
+            <th mat-header-cell *matHeaderCellDef> Offset </th>
+            <td mat-cell *matCellDef="let msg"> {{ msg.offset }} </td>
+          </ng-container>
+
+          <!-- Partition Column -->
+          <ng-container matColumnDef="partition">
+            <th mat-header-cell *matHeaderCellDef> Partition </th>
+            <td mat-cell *matCellDef="let msg"> {{ msg.partition }} </td>
+          </ng-container>
+
+          <!-- Key Column -->
+          <ng-container matColumnDef="key">
+            <th mat-header-cell *matHeaderCellDef> Key </th>
+            <td mat-cell *matCellDef="let msg"> {{ msg.key || 'N/A' }} </td>
+          </ng-container>
+
+          <!-- Value Column -->
+          <ng-container matColumnDef="value">
+            <th mat-header-cell *matHeaderCellDef> Value (First 100 chars) </th>
+            <td mat-cell *matCellDef="let msg" class="value-cell" [title]="msg.value"> 
+              {{ truncateValue(msg.value) }} 
+            </td>
+          </ng-container>
+
+          <!-- Timestamp Column -->
+          <ng-container matColumnDef="timestamp">
+            <th mat-header-cell *matHeaderCellDef> Timestamp </th>
+            <td mat-cell *matCellDef="let msg"> {{ msg.timestamp | date:'medium' }} </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef> Actions </th>
+            <td mat-cell *matCellDef="let msg">
+              <button mat-icon-button color="accent" (click)="transform(msg)" title="Transform Message">
+                <mat-icon>transform</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+
+    </mat-card-content>
+
+    <mat-card-actions class="browse-actions">
+      <div class="pagination-info" *ngIf="messages.length > 0">
+        Showing messages 0–{{ messages.length }}
+      </div>
+      <div class="action-buttons">
+        <button mat-stroked-button color="primary" (click)="loadMessages(true)" [disabled]="isLoading">
+          <mat-icon>refresh</mat-icon>
+          Refresh
+        </button>
+        <button mat-flat-button color="primary" (click)="loadMore()" [disabled]="isLoading || !hasMore">
+          <mat-icon>expand_more</mat-icon>
+          Load More
+        </button>
+      </div>
+    </mat-card-actions>
+  </mat-card>
+</div>

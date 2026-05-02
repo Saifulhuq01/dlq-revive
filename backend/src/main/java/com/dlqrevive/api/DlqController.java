@@ -2,6 +2,11 @@ package com.dlqrevive.api;
 
 import com.dlqrevive.reader.DLQMessage;
 import com.dlqrevive.reader.DLQReader;
+import com.dlqrevive.redrive.RedriveEngine;
+import com.dlqrevive.redrive.RedriveRequest;
+import com.dlqrevive.redrive.RedriveSummary;
+import com.dlqrevive.transform.JsonataEngine;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -10,16 +15,21 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/dlq")
+@CrossOrigin(origins = "http://localhost:4200")
 public class DlqController {
-
     private static final Logger log = LoggerFactory.getLogger(DlqController.class);
     
     private final DLQReader dlqReader;
     private final com.dlqrevive.audit.AuditLogger auditLogger;
+    private final JsonataEngine jsonataEngine;
+    private final RedriveEngine redriveEngine;
 
-    public DlqController(DLQReader dlqReader, com.dlqrevive.audit.AuditLogger auditLogger) {
+    public DlqController(DLQReader dlqReader, com.dlqrevive.audit.AuditLogger auditLogger,
+                          JsonataEngine jsonataEngine, RedriveEngine redriveEngine) {
         this.dlqReader = dlqReader;
         this.auditLogger = auditLogger;
+        this.jsonataEngine = jsonataEngine;
+        this.redriveEngine = redriveEngine;
     }
 
     @GetMapping("/{topic}/messages")
@@ -40,4 +50,27 @@ public class DlqController {
                 
         return dlqReader.readMessages(bootstrapServers, topic, partition, fromOffset, limit);
     }
+
+    @PostMapping("/transform/preview")
+    public TransformPreviewResponse previewTransform(@RequestBody TransformPreviewRequest request) {
+        log.info("REST request to preview transformation");
+        
+        try {
+            String output = jsonataEngine.transform(request.sampleMessage(), request.expression());
+            return new TransformPreviewResponse(request.sampleMessage(), output, true, null);
+        } catch (Exception e) {
+            log.debug("Transformation preview failed: {}", e.getMessage());
+            return new TransformPreviewResponse(request.sampleMessage(), null, false, e.getMessage());
+        }
+    }
+
+    @PostMapping("/redrive")
+    public RedriveSummary executeRedrive(@Valid @RequestBody RedriveRequest request) {
+        log.info("REST request to redrive {} messages to topic: {}",
+                request.getMessages().size(), request.getTargetTopic());
+        return redriveEngine.executeRedrive(request);
+    }
+
+    public record TransformPreviewRequest(String expression, String sampleMessage) {}
+    public record TransformPreviewResponse(String input, String output, boolean valid, String error) {}
 }

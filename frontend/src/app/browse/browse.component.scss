@@ -1,0 +1,62 @@
+.page-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+
+  .browse-card {
+    width: 100%;
+    max-width: 1200px;
+  }
+}
+
+.table-container {
+  margin-top: 1rem;
+  overflow-x: auto;
+  
+  table {
+    width: 100%;
+  }
+}
+
+.value-cell {
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: monospace;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.error-message {
+  color: var(--mat-sys-error);
+  padding: 1rem;
+  text-align: center;
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.browse-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+
+  .pagination-info {
+    font-size: 0.9rem;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+  }
+}
