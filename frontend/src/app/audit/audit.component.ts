@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -32,6 +32,7 @@ import { DlqApiService, AuditEntry } from '../services/dlq-api.service';
 })
 export class AuditComponent implements OnInit {
   private dlqApi = inject(DlqApiService);
+  private cdr = inject(ChangeDetectorRef);
 
   displayedColumns = ['id', 'action', 'topic', 'messageCount', 'user', 'timestamp', 'sessionId'];
   auditEntries: AuditEntry[] = [];
@@ -53,10 +54,12 @@ export class AuditComponent implements OnInit {
       next: (data) => {
         this.auditEntries = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Failed to load audit trail', err);
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }

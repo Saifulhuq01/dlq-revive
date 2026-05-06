@@ -116,26 +116,40 @@ export class DlqApiService {
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
 
+        let buffer = '';
         const read = () => {
           reader?.read().then(({ done, value }) => {
             if (done) {
               this.zone.run(() => observer.complete());
               return;
             }
-            const chunk = decoder.decode(value, { stream: true });
-            const events = chunk.split('\n\n');
-            for (const ev of events) {
-              if (ev.startsWith('event:')) {
-                const lines = ev.split('\n');
-                const eventName = lines[0].replace('event:', '').trim();
-                const dataLine = lines.find(l => l.startsWith('data:'));
-                if (dataLine) {
-                  const data = JSON.parse(dataLine.replace('data:', '').trim());
-                  this.zone.run(() => observer.next({ type: eventName, data }));
+
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split('\n\n');
+            buffer = parts.pop() || ''; // Keep the last partial part in the buffer
+
+            for (const chunk of parts) {
+              if (!chunk.trim()) continue;
+
+              const lines = chunk.split('\n');
+              let eventName = 'message';
+              let dataStr = '';
+
+              for (const line of lines) {
+                if (line.startsWith('event:')) {
+                  eventName = line.replace('event:', '').trim();
+                } else if (line.startsWith('data:')) {
+                  dataStr = line.replace('data:', '').trim();
                 }
-              } else if (ev.startsWith('data:')) {
-                const data = JSON.parse(ev.replace('data:', '').trim());
-                this.zone.run(() => observer.next({ type: 'message', data }));
+              }
+
+              if (dataStr) {
+                try {
+                  const data = JSON.parse(dataStr);
+                  this.zone.run(() => observer.next({ type: eventName, data }));
+                } catch (e) {
+                  console.error('Error parsing SSE data', dataStr, e);
+                }
               }
             }
             read();
