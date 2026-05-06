@@ -157,6 +157,9 @@ export class TransformComponent implements OnInit {
     }
   }
 
+  // Live Redrive Progress state
+  redriveProgress: any = null;
+
   executeRedrive() {
     if (!this.targetTopic.trim()) {
       this.snackBar.open('Please enter a target topic', 'Close', { duration: 3000 });
@@ -183,22 +186,29 @@ export class TransformComponent implements OnInit {
     this.isRedriving = true;
     this.redriveSummary = null;
     this.redriveError = null;
+    this.redriveProgress = { produced: 0, skipped: 0, failed: 0, status: 'STARTING' };
 
-    this.dlqApi.executeRedrive(request).subscribe({
-      next: (summary) => {
-        this.isRedriving = false;
-        this.redriveSummary = summary;
-        this.snackBar.open(
-          `Redrive complete: Produced ${summary.produced}, Skipped ${summary.skipped}, Failed ${summary.failed}`,
-          'Close', { duration: 5000 }
-        );
+    this.dlqApi.streamRedrive(request).subscribe({
+      next: (event: any) => {
+        if (event.type === 'progress') {
+          this.redriveProgress = event.data;
+        } else if (event.type === 'complete') {
+          this.redriveSummary = event.data;
+          this.isRedriving = false;
+          this.snackBar.open(
+            `Redrive complete: Produced ${this.redriveSummary!.produced}, Skipped ${this.redriveSummary!.skipped}, Failed ${this.redriveSummary!.failed}`,
+            'Close', { duration: 5000 }
+          );
+        }
       },
       error: (err) => {
         this.isRedriving = false;
-        if (err.status === 402) {
-          this.redriveError = err.error?.message || 'Free tier limit: 100 messages. Upgrade for bulk redrive.';
-        } else {
-          this.redriveError = 'Redrive failed: ' + (err.error?.message || err.message || 'Unknown error');
+        console.error('Redrive stream error', err);
+        this.redriveError = 'Redrive failed stream: ' + (err.message || 'Unknown error');
+      },
+      complete: () => {
+        if (!this.redriveSummary) {
+          this.isRedriving = false;
         }
       }
     });

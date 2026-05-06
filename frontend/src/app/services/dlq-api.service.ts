@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, NgZone } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -28,13 +28,14 @@ export interface TransformTemplate {
 })
 export class DlqApiService {
   private http = inject(HttpClient);
+  private zone = inject(NgZone);
   private baseUrl = 'http://localhost:8080/dlq';
 
   getMessages(
-    bootstrapServers: string, 
-    topic: string, 
-    partition: number = 0, 
-    fromOffset: number = 0, 
+    bootstrapServers: string,
+    topic: string,
+    partition: number = 0,
+    fromOffset: number = 0,
     limit: number = 10
   ): Observable<DlqMessage[]> {
     const params = new HttpParams()
@@ -69,6 +70,80 @@ export class DlqApiService {
 
   executeRedrive(request: RedriveRequest): Observable<RedriveSummary> {
     return this.http.post<RedriveSummary>(`${this.baseUrl}/redrive`, request);
+  }
+
+  streamMessages(
+    bootstrapServers: string,
+    topic: string,
+    partition: number = 0,
+    fromOffset: number = 0
+  ): Observable<any> {
+    return new Observable<any>(observer => {
+      const url = `${this.baseUrl}/${topic}/messages/stream?bootstrapServers=${encodeURIComponent(bootstrapServers)}&partition=${partition}&fromOffset=${fromOffset}`;
+      const eventSource = new EventSource(url);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          this.zone.run(() => observer.next({ type: 'message', data: message }));
+        } catch (e) {
+          console.error('Error parsing SSE message', e);
+        }
+      };
+
+      eventSource.addEventListener('connected', (event: any) => {
+        this.zone.run(() => observer.next({ type: 'connected', data: event.data }));
+      });
+
+      eventSource.onerror = (error) => {
+        eventSource.close();
+        this.zone.run(() => observer.complete());
+      };
+
+      return () => eventSource.close();
+    });
+  }
+
+  streamRedrive(request: RedriveRequest): Observable<any> {
+    return new Observable<any>(observer => {
+      fetch(`${this.baseUrl}/redrive/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request)
+      }).then(response => {
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        const read = () => {
+          reader?.read().then(({ done, value }) => {
+            if (done) {
+              this.zone.run(() => observer.complete());
+              return;
+            }
+            const chunk = decoder.decode(value, { stream: true });
+            const events = chunk.split('\n\n');
+            for (const ev of events) {
+              if (ev.startsWith('event:')) {
+                const lines = ev.split('\n');
+                const eventName = lines[0].replace('event:', '').trim();
+                const dataLine = lines.find(l => l.startsWith('data:'));
+                if (dataLine) {
+                  const data = JSON.parse(dataLine.replace('data:', '').trim());
+                  this.zone.run(() => observer.next({ type: eventName, data }));
+                }
+              } else if (ev.startsWith('data:')) {
+                const data = JSON.parse(ev.replace('data:', '').trim());
+                this.zone.run(() => observer.next({ type: 'message', data }));
+              }
+            }
+            read();
+          }).catch(err => this.zone.run(() => observer.error(err)));
+        }
+        read();
+      }).catch(err => this.zone.run(() => observer.error(err)));
+    });
   }
 }
 
