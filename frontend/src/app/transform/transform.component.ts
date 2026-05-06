@@ -10,6 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Router } from '@angular/router';
+import { ChangeDetectorRef } from '@angular/core';
 
 import { DlqApiService, TransformTemplate, RedriveRequest, RedriveSummary } from '../services/dlq-api.service';
 import { ConnectionService } from '../services/connection.service';
@@ -37,6 +38,7 @@ export class TransformComponent implements OnInit {
   private connectionService = inject(ConnectionService);
   private dlqApi = inject(DlqApiService);
   private snackBar = inject(MatSnackBar);
+  private cdr = inject(ChangeDetectorRef);
 
   selectedMessage: any = null;
   expression: string = '$';
@@ -138,6 +140,7 @@ export class TransformComponent implements OnInit {
           this.transformedOutput = '';
           this.errorMsg = res.error || 'Unknown transformation error';
         }
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.isLoading = false;
@@ -145,6 +148,7 @@ export class TransformComponent implements OnInit {
         this.errorMsg = 'Failed to connect to backend';
         this.transformedOutput = '';
         console.error(err);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -156,6 +160,9 @@ export class TransformComponent implements OnInit {
       });
     }
   }
+
+  // Live Redrive Progress state
+  redriveProgress: any = null;
 
   executeRedrive() {
     if (!this.targetTopic.trim()) {
@@ -183,22 +190,32 @@ export class TransformComponent implements OnInit {
     this.isRedriving = true;
     this.redriveSummary = null;
     this.redriveError = null;
+    this.redriveProgress = { produced: 0, skipped: 0, failed: 0, status: 'STARTING' };
 
-    this.dlqApi.executeRedrive(request).subscribe({
-      next: (summary) => {
-        this.isRedriving = false;
-        this.redriveSummary = summary;
-        this.snackBar.open(
-          `Redrive complete: Produced ${summary.produced}, Skipped ${summary.skipped}, Failed ${summary.failed}`,
-          'Close', { duration: 5000 }
-        );
+    this.dlqApi.streamRedrive(request).subscribe({
+      next: (event: any) => {
+        if (event.type === 'progress') {
+          this.redriveProgress = event.data;
+        } else if (event.type === 'complete') {
+          this.redriveSummary = event.data;
+          this.isRedriving = false;
+          this.snackBar.open(
+            `Redrive complete: Produced ${this.redriveSummary!.produced}, Skipped ${this.redriveSummary!.skipped}, Failed ${this.redriveSummary!.failed}`,
+            'Close', { duration: 5000 }
+          );
+        }
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.isRedriving = false;
-        if (err.status === 402) {
-          this.redriveError = err.error?.message || 'Free tier limit: 100 messages. Upgrade for bulk redrive.';
-        } else {
-          this.redriveError = 'Redrive failed: ' + (err.error?.message || err.message || 'Unknown error');
+        console.error('Redrive stream error', err);
+        this.redriveError = 'Redrive failed stream: ' + (err.message || 'Unknown error');
+        this.cdr.detectChanges();
+      },
+      complete: () => {
+        if (!this.redriveSummary) {
+          this.isRedriving = false;
+          this.cdr.detectChanges();
         }
       }
     });

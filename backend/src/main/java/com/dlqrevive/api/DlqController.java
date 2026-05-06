@@ -10,6 +10,8 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 
@@ -18,14 +20,14 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:4200")
 public class DlqController {
     private static final Logger log = LoggerFactory.getLogger(DlqController.class);
-    
+
     private final DLQReader dlqReader;
     private final com.dlqrevive.audit.AuditLogger auditLogger;
     private final JsonataEngine jsonataEngine;
     private final RedriveEngine redriveEngine;
 
     public DlqController(DLQReader dlqReader, com.dlqrevive.audit.AuditLogger auditLogger,
-                          JsonataEngine jsonataEngine, RedriveEngine redriveEngine) {
+            JsonataEngine jsonataEngine, RedriveEngine redriveEngine) {
         this.dlqReader = dlqReader;
         this.auditLogger = auditLogger;
         this.jsonataEngine = jsonataEngine;
@@ -37,24 +39,26 @@ public class DlqController {
             @PathVariable String topic,
             @RequestParam String bootstrapServers,
             // Defaulting to partition 0 because DLQs are often single-partitioned.
-            // If the topic has multiple partitions, the frontend will need to loop or specify it.
+            // If the topic has multiple partitions, the frontend will need to loop or
+            // specify it.
             @RequestParam(defaultValue = "0") int partition,
             @RequestParam(defaultValue = "0") long fromOffset,
             @RequestParam(defaultValue = "10") int limit) {
-        
-        log.info("REST request to read messages from topic: {}, partition: {}, fromOffset: {}, limit: {}", 
+
+        log.info("REST request to read messages from topic: {}, partition: {}, fromOffset: {}, limit: {}",
                 topic, partition, fromOffset, limit);
-                
-        // TODO: Replace "api-user" with actual authenticated user identity once Spring Security is added
+
+        // TODO: Replace "api-user" with actual authenticated user identity once Spring
+        // Security is added
         auditLogger.logBrowse(topic, partition, fromOffset, "api-user");
-                
+
         return dlqReader.readMessages(bootstrapServers, topic, partition, fromOffset, limit);
     }
 
     @PostMapping("/transform/preview")
     public TransformPreviewResponse previewTransform(@RequestBody TransformPreviewRequest request) {
         log.info("REST request to preview transformation");
-        
+
         try {
             String output = jsonataEngine.transform(request.sampleMessage(), request.expression());
             return new TransformPreviewResponse(request.sampleMessage(), output, true, null);
@@ -71,6 +75,31 @@ public class DlqController {
         return redriveEngine.executeRedrive(request);
     }
 
-    public record TransformPreviewRequest(String expression, String sampleMessage) {}
-    public record TransformPreviewResponse(String input, String output, boolean valid, String error) {}
+    @GetMapping(value = "/{topic}/messages/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamMessages(
+            @PathVariable String topic,
+            @RequestParam String bootstrapServers,
+            @RequestParam(defaultValue = "0") int partition,
+            @RequestParam(defaultValue = "0") long fromOffset) {
+
+        log.info("REST request to stream messages from topic: {}, partition: {}, fromOffset: {}",
+                topic, partition, fromOffset);
+
+        auditLogger.logBrowse(topic, partition, fromOffset, "api-user");
+
+        return dlqReader.streamMessages(bootstrapServers, topic, partition, fromOffset);
+    }
+
+    @PostMapping(value = "/redrive/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter executeRedriveStream(@Valid @RequestBody RedriveRequest request) {
+        log.info("REST request to stream redrive {} messages to topic: {}",
+                request.getMessages().size(), request.getTargetTopic());
+        return redriveEngine.executeRedriveStream(request);
+    }
+
+    public record TransformPreviewRequest(String expression, String sampleMessage) {
+    }
+
+    public record TransformPreviewResponse(String input, String output, boolean valid, String error) {
+    }
 }
