@@ -7,10 +7,13 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * DLQReader — Paginated, memory-safe DLQ message reader.
@@ -66,6 +69,7 @@ public class DLQReader {
 
                 if (records.isEmpty()) {
                     emptyPolls++;
+                    if (fetched > 0) break; // Don't wait for more if we already have some messages!
                     continue;
                 }
 
@@ -90,5 +94,43 @@ public class DLQReader {
         }
 
         return messages;
+    }
+
+    public SseEmitter streamMessages(String bootstrapServers, String topic, int partition, long fromOffset) {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        AtomicBoolean isRunning = new AtomicBoolean(true);
+
+        emitter.onCompletion(() -> isRunning.set(false));
+        emitter.onTimeout(() -> isRunning.set(false));
+        emitter.onError(e -> isRunning.set(false));
+
+        new Thread(() -> {
+            try (KafkaConsumer<String, String> consumer = kafkaConnector.createReadOnlyConsumer(
+                    bootstrapServers, "stream-" + UUID.randomUUID().toString().substring(0, 8))) {
+                
+                kafkaConnector.assignAndSeek(consumer, topic, partition, fromOffset);
+                emitter.send(SseEmitter.event().name("connected").data("{}"));
+                
+                while (isRunning.get()) {
+                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
+                    for (ConsumerRecord<String, String> record : records) {
+                        if (!isRunning.get()) break;
+                        try {
+                            emitter.send(DLQMessage.from(record));
+                        } catch (Exception e) {
+                            isRunning.set(false);
+                            emitter.completeWithError(e);
+                            return;
+                        }
+                    }
+                }
+                emitter.complete();
+            } catch (Exception e) {
+                log.error("Error in SSE stream for topic {}: {}", topic, e.getMessage());
+                emitter.completeWithError(e);
+            }
+        }).start();
+
+        return emitter;
     }
 }

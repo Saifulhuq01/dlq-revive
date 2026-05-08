@@ -75,6 +75,18 @@
           </button>
         </div>
 
+        <div *ngIf="redriveProgress && !redriveSummary && isRedriving" class="redrive-progress">
+          <div class="progress-header">
+            <mat-icon class="spin-icon">sync</mat-icon>
+            <span>Live Progress: {{ redriveProgress.status }}</span>
+          </div>
+          <div class="progress-stats">
+            <span class="stat produced">Produced: <strong>{{ redriveProgress.produced }}</strong></span>
+            <span class="stat skipped">Skipped: <strong>{{ redriveProgress.skipped }}</strong></span>
+            <span class="stat failed">Failed: <strong>{{ redriveProgress.failed }}</strong></span>
+          </div>
+        </div>
+
         <div *ngIf="redriveSummary" class="redrive-result success-result">
           <mat-icon>check_circle</mat-icon>
           <span>

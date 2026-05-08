@@ -8,15 +8,16 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DlqApiService, DlqMessage } from '../services/dlq-api.service';
 import { ConnectionService } from '../services/connection.service';
 import { Router } from '@angular/router';
+import { ChangeDetectorRef } from '@angular/core';
 
 @Component({
   selector: 'app-browse',
   standalone: true,
   imports: [
-    CommonModule, 
-    MatCardModule, 
-    MatButtonModule, 
-    MatIconModule, 
+    CommonModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
     MatTableModule,
     MatProgressSpinnerModule
   ],
@@ -27,6 +28,7 @@ export class BrowseComponent implements OnInit {
   private dlqApi = inject(DlqApiService);
   private connectionService = inject(ConnectionService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   messages: DlqMessage[] = [];
   displayedColumns: string[] = ['offset', 'partition', 'key', 'value', 'timestamp', 'actions'];
@@ -42,40 +44,57 @@ export class BrowseComponent implements OnInit {
     this.loadMessages(true);
   }
 
+  private streamSubscription: any;
+
   loadMessages(reset = false) {
-    const config = this.connectionService.getConnection();
+    let config = this.connectionService.getConnection();
     if (!config) {
-      this.router.navigate(['/connect']);
-      return;
+      // Default fallback if accessed directly (use localhost:9092 since you are running via IntelliJ)
+      config = { bootstrapServers: 'localhost:9092', topicName: 'payments.dlq' };
+      this.connectionService.connect(config);
     }
 
     if (reset) {
       this.currentOffset = 0;
       this.messages = [];
-      this.hasMore = true;
+      this.hasMore = false;
     }
 
     this.topicName = config.topicName;
     this.isLoading = true;
     this.error = null;
 
-    this.dlqApi.getMessages(config.bootstrapServers, config.topicName, 0, this.currentOffset, this.pageSize).subscribe({
-      next: (data) => {
-        if (reset) {
-          this.messages = data;
-        } else {
-          this.messages = [...this.messages, ...data];
+    if (this.streamSubscription) {
+      this.streamSubscription.unsubscribe();
+    }
+
+    this.streamSubscription = this.dlqApi.streamMessages(config.bootstrapServers, config.topicName, 0, this.currentOffset).subscribe({
+      next: (event) => {
+        if (event.type === 'message') {
+          this.messages = [...this.messages, event.data];
+          this.isLoading = false;
+        } else if (event.type === 'connected') {
+          this.isLoading = false;
         }
-        
-        this.hasMore = data.length === this.pageSize;
-        this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Failed to load messages', err);
-        this.error = 'Failed to load messages from backend.';
+        console.error('Failed to load messages stream', err);
+        this.error = 'Failed to load messages from backend stream.';
         this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      complete: () => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
+  }
+
+  ngOnDestroy() {
+    if (this.streamSubscription) {
+      this.streamSubscription.unsubscribe();
+    }
   }
 
   loadMore() {
