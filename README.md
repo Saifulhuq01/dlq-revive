@@ -11,9 +11,22 @@ We posted on Reddit asking how engineers deal with failed Kafka messages, and th
 ## Quick Start
 
 ```bash
-docker compose up --build
+# Clone the repo
+git clone https://github.com/Saifulhuq01/dlq-revive.git
+cd dlq-revive
+
+# Run the full stack (backend + frontend + infrastructure)
+docker compose up -d
+
+# Dashboard opens at http://localhost:4200
 ```
-Open [http://localhost:4200](http://localhost:4200) in your browser.
+
+For local development (infrastructure only):
+```bash
+docker compose -f docker/docker-compose.yml up -d
+# Then run backend: cd backend && mvn spring-boot:run
+# And frontend: cd frontend && npm install && npx ng serve
+```
 
 ## What It Does
 
